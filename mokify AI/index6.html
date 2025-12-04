@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mokify AI - Intelligent Interview Simulator</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        /* --- THEME VARIABLES --- */
+        :root {
+            /* Default Dark Mode - PURE BLACK */
+            --bg-body: #000000;
+            --bg-panel: rgba(17, 24, 39, 0.6);
+            --bg-card: rgba(255, 255, 255, 0.05);
+            --bg-sidebar: #0f0f13;
+            --text-main: #ffffff;
+            --text-muted: #9ca3af;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            
+            /* Frames */
+            --frame-border: rgba(255, 255, 255, 0.15);
+            --frame-bg: #000000;
+            
+            /* Dashboard Specifics */
+            --dash-header-border: rgba(255, 255, 255, 0.1);
+            --dash-text: #ffffff;
+
+            /* Nav */
+            --nav-bg: rgba(20, 20, 20, 0.8);
+            --nav-text: #9ca3af;
+            --nav-hover: #ffffff;
+            
+            /* Real Time Avatar Pill */
+            --rta-text: #ffffff;
+            --rta-border: rgba(59, 130, 246, 0.5);
+
+            /* Marquee Mask */
+            --marquee-mask: linear-gradient(to right, #000000, transparent 5%, transparent 95%, #000000);
+            
+            /* Step Cards */
+            --step-bg: #000000;
+            --step-text: #ffffff;
+        }
+
+        body.light-mode {
+            /* Light Mode Overrides - PURE WHITE */
+            --bg-body: #ffffff;
+            --bg-panel: #ffffff;
+            --bg-card: #f3f4f6; 
+            --bg-sidebar: #f9fafb;
+            --text-main: #000000;
+            --text-muted: #1f2937;
+            --border-color: #000000;
+            --glass-bg: #ffffff;
+
+            /* Frames - SOLID BLACK in White Mode */
+            --frame-border: #000000; 
+            --frame-bg: #ffffff;
+            
+            /* Dashboard Specifics */
+            --dash-header-border: #000000;
+            --dash-text: #000000;
+
+            /* Nav */
+            --nav-bg: rgba(255, 255, 255, 0.9);
+            --nav-text: #000000;
+            --nav-hover: #000000;
+            
+            /* Real Time Avatar Pill */
+            --rta-text: #000000;
+            --rta-border: #000000;
+
+             /* Marquee Mask */
+            --marquee-mask: linear-gradient(to right, #ffffff, transparent 5%, transparent 95%, #ffffff);
+            
+             /* Step Cards */
+            --step-bg: #ffffff;
+            --step-text: #000000;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-body); 
+            color: var(--text-main); 
+            transition: background-color 0.3s, color 0.3s;
+            overflow-x: hidden;
+        }
+
+        /* --- UTILITIES --- */
+        .theme-text-main { color: var(--text-main); }
+        .theme-text-muted { color: var(--text-muted); }
+        .theme-border { border-color: var(--border-color); }
+        .theme-bg-body { background-color: var(--bg-body); }
+
+        /* --- HERO ANIMATION --- */
+        .dream-job-text {
+            background: linear-gradient(to right, #e9d5ff, #ffffff, #a855f7, #e9d5ff);
+            background-size: 200% auto;
+            color: #000;
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shine 4s linear infinite;
+        }
+        @keyframes shine { to { background-position: 200% center; } }
+
+        /* --- NAV DROPDOWN --- */
+        .nav-dropdown {
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px) translateX(-50%);
+            transition: all 0.3s ease;
+        }
+        .nav-item-container:hover .nav-dropdown {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) translateX(-50%);
+        }
+
+        /* Feature Card Hover Effects */
+        .feature-img { transition: transform 0.5s ease; }
+        .feature-card:hover .feature-img { transform: scale(1.1); }
+        
+        .feature-dot {
+            display: inline-block; width: 6px; height: 6px;
+            background-color: #a855f7; border-radius: 50%;
+            opacity: 0; transform: translateX(-10px);
+            transition: all 0.3s ease; margin-right: 8px;
+        }
+        .feature-text { transition: transform 0.3s ease; }
+        .feature-card:hover .feature-dot { opacity: 1; transform: translateX(0); }
+        .feature-card:hover .feature-text { transform: translateX(5px); }
+
+        /* --- CARD STYLES --- */
+        .special-card {
+            background-color: #000000;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+        .special-card::before {
+            content: ''; position: absolute; inset: 0;
+            background: radial-gradient(600px circle at center, rgba(168, 85, 247, 0.15), transparent 70%);
+            opacity: 0; transition: opacity 0.4s; z-index: -1;
+        }
+        .special-card:hover::before { opacity: 1; }
+        .special-card:hover {
+            border-color: rgba(168, 85, 247, 0.5);
+            box-shadow: 0 0 40px rgba(168, 85, 247, 0.15);
+        }
+        
+        /* Card 2 Gradient */
+        .card-gradient-bg { background: linear-gradient(to bottom, #000000 20%, #581c87 100%); }
+
+        /* Circle Animation Card 2 - INWARD PULSE */
+        .concentric-circle {
+            position: absolute; border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: pulse-in 3s ease-in-out infinite;
+        }
+        @keyframes pulse-in {
+            0% { transform: scale(1.5); opacity: 0; }
+            50% { transform: scale(1); opacity: 0.5; }
+            100% { transform: scale(0.5); opacity: 0; }
+        }
+
+        /* Icon Animation Card 3 */
+        .icon-pop { transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .frame-row:hover .icon-pop { transform: scale(1.2) rotate(10deg); color: #a855f7; }
+
+        /* --- TEAM CAROUSEL ANIMATIONS --- */
+        .team-slide {
+            transition: opacity 0.5s ease;
+        }
+        
+        /* Wipe Animations */
+        @keyframes wipeLeft {
+            0% { transform: translateX(100%); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes wipeRight {
+            0% { transform: translateX(-100%); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+
+        .animate-next { animation: wipeLeft 0.5s forwards; }
+        .animate-prev { animation: wipeRight 0.5s forwards; }
+
+        /* --- DASHBOARD & UTILS --- */
+        .glass-panel { background: var(--bg-panel); backdrop-filter: blur(16px); border: 1px solid var(--border-color); }
+        .chat-bubble { max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 0.95rem; line-height: 1.5; animation: fadeIn 0.3s ease-out; }
+        .chat-bubble.ai { background-color: rgba(255, 255, 255, 0.1); color: #e5e7eb; border-top-left-radius: 2px; }
+        .chat-bubble.user { background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%); color: white; border-top-right-radius: 2px; margin-left: auto; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .code-editor { font-family: 'Fira Code', monospace; line-height: 1.6; }
+        .hidden-force { display: none !important; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        
+        /* Dynamic Frames */
+        .dynamic-frame { border: 1px solid var(--frame-border); background-color: var(--frame-bg); transition: all 0.3s ease; }
+        .dashboard-header-frame { border-bottom: 1px solid var(--dash-header-border); color: var(--dash-text); }
+        .dashboard-col-frame { border-right: 1px solid var(--dash-header-border); background-color: var(--bg-sidebar); }
+        
+        /* Light Mode Specifics */
+        body.light-mode .text-white-in-light { color: #000000 !important; }
+        body.light-mode .mokify-circle { color: #ffffff !important; }
+        body.light-mode .ai-thinking-text { color: #000000 !important; }
+        body.light-mode .ai-thinking-icon { color: #000000 !important; }
+        body.light-mode .dash-btn { border-color: #000000 !important; color: #000000 !important; }
+
+        /* Nav Animation */
+        .nav-anim-btn { position: relative; color: var(--nav-text); font-weight: 500; transition: color 0.3s; }
+        .nav-anim-btn:hover { color: var(--nav-hover); }
+        .nav-anim-btn::after {
+            content: ''; position: absolute; width: 100%; height: 2px; bottom: -4px; left: 0;
+            background-color: #a855f7; transform: scaleX(0); transform-origin: bottom right; transition: transform 0.3s ease-out;
+        }
+        .nav-anim-btn:hover::after { transform: scaleX(1); transform-origin: bottom left; }
+        
+        /* Marquee Mask */
+        .marquee-container { mask-image: var(--marquee-mask); -webkit-mask-image: var(--marquee-mask); }
+
+        /* --- SCROLL ANIMATION UTILS --- */
+        .scrolly-text { opacity: 0.3; transition: opacity 0.5s ease; }
+        .scrolly-text.active { opacity: 1; }
+        .transition-image { transition: opacity 0.5s ease-in-out; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <nav id="main-nav" class="fixed top-0 left-0 right-0 z-50 px-8 py-6 flex items-center justify-between pointer-events-none">
+        <div class="pointer-events-auto text-purple-500 font-bold text-xl tracking-tight cursor-pointer" onclick="router.navigate('landing')">Mokify AI</div>
+        
+        <div id="nav-center" class="pointer-events-auto absolute left-1/2 transform -translate-x-1/2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-full px-8 py-3 flex items-center gap-8 text-sm font-medium shadow-xl">
+             </div>
+
+        <div id="nav-right" class="pointer-events-auto flex items-center gap-4">
+            </div>
+    </nav>
+
+    <main id="app" class="relative z-10 flex-grow h-full">
+        </main>
+
+    <script>
+        // --- 1. STATE & CONFIG ---
+        const API_URL = "http://localhost:5000/api";
+        let apiKey = "AIzaSyDvySH2FdIIMFpER1dz8b3JU3ApuCoO0fA"; 
+        let globalMediaStream = null; let globalScreenStream = null; let mediaRecorder = null; let recordedChunks = [];
+        
+        const COMPANIES_DATA = { "google": { name: "Google", domain: "google.com", rounds: ['recruiter_screen', 'resume_screen', 'online_coding', 'technical_phone', 'system_design_short', 'hr_offer'] }, "meta": { name: "Meta", domain: "meta.com", rounds: ['resume_screen', 'recruiter_screen', 'online_assessment', 'technical_screen', 'system_design', 'hiring_committee_review', 'hr_offer'] }, "apple": { name: "Apple", domain: "apple.com", rounds: ['resume_screen', 'recruiter_screen', 'technical_phone', 'coding_interview', 'system_design', 'hiring_manager_round', 'hr_offer'] }, "infosys": { name: "Infosys", domain: "infosys.com", rounds: ['resume_screen', 'aptitude_test', 'technical_interview', 'managerial_round', 'hr_offer'] }, "tcs": { name: "TCS", domain: "tcs.com", rounds: ['resume_screen', 'nqt_or_earlier_test', 'technical_interview', 'managerial_round', 'hr_offer'] }, "wipro": { name: "Wipro", domain: "wipro.com", rounds: ['resume_screen', 'online_assessment', 'technical_interview', 'managerial_or_team_round', 'hr_offer'] }, "accenture": { name: "Accenture", domain: "accenture.com", rounds: ['resume_screen', 'online_assessment', 'technical_interview', 'case_or_functional_round', 'managerial_round', 'hr_offer'] }, "ibm": { name: "IBM", domain: "ibm.com", rounds: ['resume_screen', 'online_assessment', 'technical_interview', 'system_design_or_architecture', 'hiring_manager_round', 'hr_offer'] }, "tesla": { name: "Tesla", domain: "tesla.com", rounds: ['resume_screen', 'recruiter_screen', 'technical_phone', 'system_design_or_domain_specific', 'hr_offer'] }, "amazon": { name: "Amazon", domain: "amazon.com", rounds: ['resume_screen', 'online_assessment', 'technical_phone', 'leadership_principles_round', 'hiring_manager_round', 'hr_offer'] }, "microsoft": { name: "Microsoft", domain: "microsoft.com", rounds: ['resume_screen', 'recruiter_screen', 'online_assessment', 'technical_phone', 'system_design', 'hiring_manager_round', 'hr_offer'] }, "netflix": { name: "Netflix", domain: "netflix.com", rounds: ['resume_screen', 'recruiter_screen', 'takehome_or_project_assign', 'technical_interview', 'culture_fit_interview', 'hiring_manager_round', 'hr_offer'] }, "openai": { name: "OpenAI", domain: "openai.com", rounds: ['resume_screen', 'recruiter_screen', 'takehome_or_research_assignment', 'technical_interview_loop', 'architecture_systems_round', 'hiring_committee_or_research_review', 'hr_offer'] }, "deepseek": { name: "DeepSeek", domain: "deepseek.com", rounds: ['resume_screen', 'recruiter_screen', 'technical_assignment_or_coding_test', 'technical_interview', 'hiring_manager_round', 'hr_offer'] } };
+        const COMPANIES_LIST = Object.entries(COMPANIES_DATA).map(([key, val]) => ({ key: key, name: val.name, domain: val.domain }));
+        const QUESTIONS_150 = Array.from({length: 150}, (_, i) => { const titles = ["Two Sum", "Reverse Linked List", "Valid Parentheses", "Merge Intervals", "Group Anagrams", "Maximum Subarray", "Product of Array Except Self", "Valid Anagram", "Top K Frequent Elements", "Longest Consecutive Sequence"]; const cats = ["Array", "Linked List", "Stack", "Array", "Hashing", "DP", "Array", "Hashing", "Heap", "Hashing"]; return { id: i + 1, title: titles[i] || `Practice Problem ${i+1}`, diff: i < 50 ? "Easy" : i < 100 ? "Medium" : "Hard", cat: cats[i] || "General" }; });
+        
+        // TEAM DATA
+        const TEAM_DATA = [
+            { name: "Swayam Khangaonkar", role: "AI Engineer", img: "team1.jpg" },
+            { name: "Omkar S", role: "Product Design & Marketing", img: "team2.jpg" },
+            { name: "Sarthak Chillal", role: "Frontend Developer", img: "team3.jpg" },
+            { name: "Aakash Iti", role: "Backend Developer", img: "team4.jpg" }
+        ];
+
+        const store = {
+            user: null, view: 'landing', authMode: 'login', setupStep: 1, showDemoVideo: false,
+            completedQuestions: [1], tempQuestionId: null, isLightMode: false,
+            teamSlide: 0, teamDirection: 'next', // Carousel state
+            interviewConfig: { mode: 'company', company: null, role: null, round: null, question: null, userName: "", resumeText: "", programmingLanguage: "JavaScript", interviewerLevel: 'Basic', difficulty: 'Entry Level', personality: 'Easy Going', accent: 'US', language: 'English', micId: 'default', camId: 'default', screenShared: false, mediaPermitted: false },
+            interviewData: { transcript: [], isRecording: false, isSpeaking: false, currentInput: "", speechBuffer: "", currentCode: "// Write your solution here...\n", questionCount: 0, maxQuestions: 5, timeLeft: 300, timerInterval: null, latestAnalysis: null, recordedVideoBlob: null }
+        };
+
+        // --- 2. API Services ---
+        class ApiService {
+            async post(endpoint, data) {
+                try {
+                    const res = await fetch(`${API_URL}${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+                    if (!res.ok) throw new Error('API Error');
+                    return await res.json();
+                } catch (e) { console.warn(`API ${endpoint} failed.`); return null; }
+            }
+        }
+        const api = new ApiService();
+
+        class GeminiService {
+            constructor() { this.baseUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent"; }
+            async generateResponse(history, config, currentCount, userCode = null) {
+                if (!apiKey) return "Simulated response: API key missing.";
+                const isTechPhone = config.round?.toLowerCase().includes('technical phone');
+                const maxQ = isTechPhone ? 2 : 5;
+                if (currentCount > maxQ) return "Thank you. Interview complete.";
+                const promptText = `Act as a ${config.personality} interviewer. Context: ${config.mode === 'company' ? config.company.name : config.question.title}. History: ${history.map(h => `${h.speaker}: ${h.text}`).join('\n')}`;
+                try { const response = await fetch(`${this.baseUrl}?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] }) }); const data = await response.json(); return data.candidates?.[0]?.content?.parts?.[0]?.text || "Connection error."; } catch (error) { return "Connection error."; }
+            }
+            async analyzePerformance(history, config) {
+                if (!apiKey) return { score: 75, resume_score: 0, feedback: "Simulated.", improvement_plan: [] };
+                const promptText = `Analyze interview for ${config.userName}. Return JSON { "score": 0-100, "resume_score": 0-100, "feedback": "", "strengths": [], "weaknesses": [], "improvement_plan": [] }`;
+                try { const response = await fetch(`${this.baseUrl}?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }], generationConfig: { responseMimeType: "application/json" } }) }); const data = await response.json(); return JSON.parse(data.candidates[0].content.parts[0].text); } catch (e) { return { score: 0, resume_score: 0, feedback: "Error", improvement_plan: [] }; }
+            }
+        }
+        const gemini = new GeminiService();
+        const speech = { synthesis: window.speechSynthesis, recognition: window.webkitSpeechRecognition ? new webkitSpeechRecognition() : null, speak: (text) => { if(speech.synthesis) { const u = new SpeechSynthesisUtterance(text); speech.synthesis.speak(u); } }, startListening: (onResult) => { if(speech.recognition) { speech.recognition.onresult = e => onResult(e.results[e.resultIndex][0].transcript, ""); speech.recognition.start(); } }, stopListening: () => { if(speech.recognition) speech.recognition.stop(); } };
+
+        // --- 3. COMPONENTS ---
+        const Components = {
+            Button: (text, onClick, variant = 'primary', id='', disabled=false) => {
+                const colors = variant === 'primary' 
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white shadow-lg shadow-blue-500/30'
+                    : 'bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 text-white border-white/20';
+                // Add specific style override for secondary buttons in white mode
+                const styleOverride = variant !== 'primary' ? 'style="border-color: var(--btn-secondary-border); color: var(--btn-secondary-text);"' : '';
+                return `<button id="${id}" onclick="${onClick}" ${disabled ? 'disabled' : ''} ${styleOverride} class="px-6 py-2 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 ${colors} ${disabled ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}">${text}</button>`;
+            },
+            ChatMessage: (role, text) => `<div class="flex flex-col ${role === 'AI' ? 'items-start' : 'items-end'} mb-4 shrink-0"><div class="text-[10px] theme-text-muted mb-1 px-2 uppercase tracking-wider">${role === 'AI' ? 'Interviewer' : 'You'}</div><div class="chat-bubble ${role === 'AI' ? 'ai' : 'user'} shadow-lg">${marked.parse(text)}</div></div>`,
+            Select: (id, label, options, selectedValue) => `<div class="mb-4 relative"><label class="block theme-text-muted text-xs font-bold mb-2 uppercase">${label}</label><div class="relative"><select id="${id}" class="w-full bg-black/40 border theme-border rounded-lg p-3 text-white focus:border-blue-500 focus:outline-none appearance-none pr-10">${options.map(o => `<option value="${o.value}" ${o.value === selectedValue ? 'selected' : ''}>${o.label}</option>`).join('')}</select><div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><i data-lucide="chevron-down" class="w-5 h-5"></i></div></div></div>`
+        };
+
+        // --- 4. ACTIONS ---
+        const router = { navigate: (view) => { store.view = view; renderApp(); window.scrollTo(0, 0); } };
+        const actions = {
+            toggleTheme: () => { store.isLightMode = !store.isLightMode; document.body.classList.toggle('light-mode', store.isLightMode); renderApp(); },
+            toggleAuthMode: (mode) => { store.authMode = mode; renderApp(); },
+            authAction: () => { const u = document.getElementById('username')?.value || document.getElementById('signup-username')?.value; if(u) { store.user = {username: u}; router.navigate('dashboard'); } },
+            logout: () => { store.user = null; router.navigate('landing'); },
+            startCompanyPractice: () => { store.interviewConfig.mode = 'company'; store.setupStep = 1; router.navigate('setup'); },
+            startQuestionsPractice: () => { store.interviewConfig.mode = 'question'; router.navigate('questions'); },
+            selectCompany: (key) => { store.interviewConfig.company = COMPANIES_DATA[key]; actions.nextSetupStep(); },
+            handleFile: (input) => { /* File */ },
+            nextSetupStep: () => { store.setupStep++; renderApp(); },
+            prevSetupStep: () => { store.setupStep--; renderApp(); },
+            toggleMedia: (cb) => { store.interviewConfig.mediaPermitted = cb.checked; actions.checkReady(); },
+            toggleScreen: (cb) => { store.interviewConfig.screenShared = cb.checked; actions.checkReady(); },
+            checkReady: () => { /* Check */ },
+            selectQuestion: (id) => { store.tempQuestionId = id; router.navigate('question_setup'); },
+            startQuestionSession: () => { const q = QUESTIONS_150.find(q => q.id === store.tempQuestionId); store.interviewConfig.question = q; store.interviewConfig.userName = document.getElementById('q-username').value; router.navigate('interview'); setTimeout(actions.startInterviewSession, 500); },
+            startInterviewSession: async () => { store.interviewData.transcript = []; const greeting = await gemini.generateResponse([], store.interviewConfig, 1); actions.speakAI(greeting); },
+            toggleAnswer: () => { /* Mic */ },
+            submitTranscript: async (text) => { /* Chat */ },
+            submitCode: () => { actions.submitTranscript("Submitted Code."); },
+            speakAI: (text) => { store.interviewData.transcript.push({speaker: 'AI', text}); renderApp(); speech.speak(text); },
+            endInterview: async () => { router.navigate('results'); },
+            playRecording: () => { /* Video */ },
+            closeVideo: () => { /* Video */ },
+            downloadPlan: () => { /* PDF */ },
+            playDemoVideo: () => { const v = document.getElementById('demo-video-player'); if(v) { v.play(); document.getElementById('demo-play-btn').classList.add('hidden'); } },
+            onDemoEnded: () => { document.getElementById('demo-play-btn').classList.remove('hidden'); },
+            closeDemoModal: () => { store.showDemoVideo = false; renderApp(); },
+            
+            // Carousel Actions
+            nextTeam: () => { store.teamSlide = (store.teamSlide + 1) % TEAM_DATA.length; store.teamDirection = 'next'; renderApp(); },
+            prevTeam: () => { store.teamSlide = (store.teamSlide - 1 + TEAM_DATA.length) % TEAM_DATA.length; store.teamDirection = 'prev'; renderApp(); }
+        };
+
+        // --- 5. RENDERERS ---
+        
+        function renderNav() {
+            const centerDiv = document.getElementById('nav-center');
+            const rightDiv = document.getElementById('nav-right');
+            if(!centerDiv || !rightDiv) return;
+
+            let linksHtml = `
+                <button class="nav-anim-btn" onclick="router.navigate('landing')">Home</button>
+                <button class="nav-anim-btn">About Us</button>
+                
+                <div class="nav-item-container relative h-full flex items-center group">
+                    <button class="nav-anim-btn flex items-center gap-1 py-2">Our Features <i data-lucide="chevron-down" class="w-3 h-3"></i></button>
+                    <div class="nav-dropdown absolute top-full left-1/2 pt-6 w-[500px] z-50">
+                        <div class="bg-[#0a0a0f] border border-white/10 rounded-2xl p-6 shadow-2xl grid grid-cols-2 gap-4">
+                            <div class="feature-card cursor-pointer group/card">
+                                <div class="w-full h-32 rounded-lg overflow-hidden mb-3 border border-white/10"><img src="img1.jpg" class="w-full h-full object-cover feature-img" onerror="this.src='https://images.unsplash.com/photo-1677442136019-21780ecad995?w=500&auto=format&fit=crop&q=60'"></div>
+                                <div class="text-xs font-bold text-white flex items-center feature-text"><span class="feature-dot"></span> AI Simulation</div>
+                            </div>
+                            <div class="feature-card cursor-pointer group/card">
+                                <div class="w-full h-32 rounded-lg overflow-hidden mb-3 border border-white/10"><img src="img2.jpg" class="w-full h-full object-cover feature-img" onerror="this.src='https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=500&auto=format&fit=crop&q=60'"></div>
+                                <div class="text-xs font-bold text-white flex items-center feature-text"><span class="feature-dot"></span> Top 150 Questions</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="nav-anim-btn" onclick="router.navigate('pricing')">Pricing</button>
+            `;
+
+            if (store.user) {
+                linksHtml += `<button class="nav-anim-btn text-purple-400" onclick="router.navigate('dashboard')">Dashboard</button>`;
+                rightDiv.innerHTML = `<button class="bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-600/30 px-5 py-2 rounded-lg text-sm font-bold transition-all" onclick="actions.logout()">Logout</button> <button onclick="actions.toggleTheme()" class="focus:outline-none transform hover:scale-105 transition-transform"><img src="https://cdn.dribbble.com/userupload/22989332/file/original-d1fccef96c676ab5823fca9a7741bf9c.gif" alt="Toggle" class="w-10 h-6 object-contain rounded-full"></button>`;
+            } else {
+                rightDiv.innerHTML = `<button class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg text-sm font-bold transition-all shadow-[0_0_15px_rgba(168,85,247,0.4)]" onclick="router.navigate('login')">Login</button> <button onclick="actions.toggleTheme()" class="focus:outline-none transform hover:scale-105 transition-transform"><img src="https://cdn.dribbble.com/userupload/22989332/file/original-d1fccef96c676ab5823fca9a7741bf9c.gif" alt="Toggle" class="w-10 h-6 object-contain rounded-full"></button>`;
+            }
+            centerDiv.innerHTML = linksHtml;
+            if(window.lucide) lucide.createIcons();
+        }
+
+        function renderPricing() {
+            return `
+            <div class="min-h-screen pt-32 px-4 theme-bg-body">
+                <div class="max-w-6xl mx-auto text-center">
+                    <h2 class="text-4xl font-bold theme-text-main mb-4">Simple, Transparent Pricing</h2>
+                    <p class="theme-text-muted mb-16">Choose the plan that fits your preparation needs.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div class="glass-panel p-8 rounded-2xl border theme-border flex flex-col relative overflow-hidden hover:border-purple-500 transition-all"><h3 class="text-xl font-bold theme-text-main mb-2">Starter</h3><div class="text-4xl font-bold theme-text-main mb-6">₹0<span class="text-sm text-gray-500 font-normal">/mo</span></div><ul class="space-y-4 mb-8 text-left theme-text-muted text-sm flex-grow"><li class="flex gap-3"><i data-lucide="check" class="w-4 h-4 text-green-500"></i> 1 Mock Interview / Day</li><li class="flex gap-3"><i data-lucide="check" class="w-4 h-4 text-green-500"></i> Basic Feedback</li></ul><button class="w-full py-3 rounded-xl border theme-border theme-text-main font-bold hover:bg-white/5 transition" onclick="router.navigate('login')">Get Started</button></div>
+                        <div class="glass-panel p-8 rounded-2xl border border-purple-500 flex flex-col relative overflow-hidden transform scale-105 shadow-[0_0_40px_rgba(168,85,247,0.2)] bg-[#0f0f13]"><div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-600 to-blue-600"></div><div class="absolute top-4 right-4 bg-purple-600 text-white text-[10px] font-bold px-2 py-1 rounded-full">MOST POPULAR</div><h3 class="text-xl font-bold text-white mb-2">Pro</h3><div class="text-4xl font-bold text-white mb-6">₹499<span class="text-sm text-gray-400 font-normal">/mo</span></div><ul class="space-y-4 mb-8 text-left text-gray-300 text-sm flex-grow"><li class="flex gap-3"><i data-lucide="check" class="w-4 h-4 text-purple-400"></i> Unlimited Interviews</li><li class="flex gap-3"><i data-lucide="check" class="w-4 h-4 text-purple-400"></i> Detailed Performance Analytics</li></ul><button class="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold transition">Subscribe Now</button></div>
+                        <div class="glass-panel p-8 rounded-2xl border theme-border flex flex-col relative overflow-hidden hover:border-purple-500 transition-all"><h3 class="text-xl font-bold theme-text-main mb-2">Expert Yearly</h3><div class="text-4xl font-bold theme-text-main mb-6">₹4999<span class="text-sm text-gray-500 font-normal">/yr</span></div><p class="text-xs text-green-400 mb-4">Save ₹1000 yearly</p><ul class="space-y-4 mb-8 text-left theme-text-muted text-sm flex-grow"><li class="flex gap-3"><i data-lucide="check" class="w-4 h-4 text-green-500"></i> All Pro Features</li><li class="flex gap-3"><i data-lucide="check" class="w-4 h-4 text-green-500"></i> Priority Support</li></ul><button class="w-full py-3 rounded-xl border theme-border theme-text-main font-bold hover:bg-white/5 transition">Choose Yearly</button></div>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        function renderLanding() {
+            // Card Styling - Black background always
+            const cardCommon = "special-card w-full rounded-2xl p-5 flex flex-col justify-between h-full";
+            
+            // Current Team Member
+            const member = TEAM_DATA[store.teamSlide];
+            const animClass = store.teamDirection === 'next' ? 'animate-next' : 'animate-prev';
+
+            return `
+            <div class="min-h-screen flex flex-col">
+                <section class="h-screen w-full flex flex-col items-center justify-center text-center px-4 relative bg-black">
+                    <div class="max-w-5xl mx-auto px-4 flex flex-col items-center text-center z-10 -mt-20">
+                        <button class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/15 border border-blue-500/50 text-[11px] tracking-[0.25em] uppercase avatar-glow rta-pill">🚀 Real Time Avatar (Coming soon)</button>
+                        <h1 class="hero-title mt-6 text-6xl sm:text-7xl lg:text-9xl font-extrabold tracking-tight mb-4">Mokify AI</h1>
+                        <p class="mt-4 text-base sm:text-xl theme-text-muted max-w-xl">Master technical interviews with realistic AI agents, live coding environments, and instant feedback.</p>
+                        <div class="mt-8 flex flex-wrap items-center justify-center gap-4">
+                            ${Components.Button('Get Started', "store.user ? router.navigate('dashboard') : router.navigate('login')", 'primary')}
+                            <button onclick="(store.showDemoVideo = true, renderApp())" class="px-6 py-2 rounded-lg font-medium transition-all flex items-center gap-2 bg-white/10 border border-white/20 hover:bg-white/20 text-white" style="border: 1px solid var(--btn-secondary-border); color: var(--btn-secondary-text);">View Demo</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="border-y marquee-container bg-black" style="border: none !important;">
+                    <marquee behavior="scroll" direction="right" scrollamount="8" class="py-6">
+                        <div class="flex gap-24">
+                        ${COMPANIES_LIST.map(c => `<span class="inline-flex items-center gap-3 mx-10 group"><img src="https://logo.clearbit.com/${c.domain}" onerror="this.src='https://via.placeholder.com/40'" class="h-10 w-auto object-contain transition company-logo-img"/><span class="text-sm font-bold text-gray-500">${c.name}</span></span>`).join('')}
+                        </div>
+                    </marquee>
+                </section>
+
+                <section class="mt-14 theme-bg-body">
+                    <div class="max-w-6xl mx-auto px-4 text-center">
+                        <h2 class="text-2xl sm:text-3xl font-bold text-white">A better way to prepare for <span class="text-purple-500">coding interviews</span></h2>
+                        <p class="mt-2 text-sm text-gray-400 max-w-2xl mx-auto">Turn your practice into real interview performance with structured steps and instant improvement insights.</p>
+                    </div>
+                </section>
+
+                <section class="mt-10 mb-16 theme-bg-body">
+                    <div class="max-w-6xl mx-auto px-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+                            
+                            <div class="flex flex-col items-center gap-3 h-full">
+                                <div class="bg-black text-white text-xs px-3 py-1 rounded-full font-bold border border-white/20">Step 1</div>
+                                <div class="${cardCommon}">
+                                    <div>
+                                        <h3 class="font-bold text-lg text-white mb-2">Select a practice plan</h3>
+                                        <p class="text-sm text-gray-400 mb-4">Pick a practice plan for your targeted company or a study track we have prepared for you.</p>
+                                    </div>
+                                    <div class="bg-white rounded-xl p-4 flex flex-col gap-3">
+                                        <div class="flex items-center gap-2 border border-gray-200 rounded-lg p-2 text-xs text-gray-500"><i data-lucide="search" class="w-3 h-3"></i> Search...</div>
+                                        <div>
+                                            <p class="text-[10px] font-bold text-black uppercase mb-1">Companies</p>
+                                            <div class="space-y-1 text-xs">
+                                                <div class="flex justify-between text-black cursor-pointer hover:text-blue-600"><span>Google – Top 50</span><span class="font-bold">/></span></div>
+                                                <div class="flex justify-between text-black cursor-pointer hover:text-blue-600"><span>Amazon – 60</span><span class="font-bold">/></span></div>
+                                                <div class="flex justify-between text-black cursor-pointer hover:text-blue-600"><span>Microsoft – 80</span><span class="font-bold">/></span></div>
+                                                <div class="flex justify-between text-black cursor-pointer hover:text-blue-600"><span>Netflix – 20</span><span class="font-bold">/></span></div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <p class="text-[10px] font-bold text-black uppercase mb-1">Study Tracks</p>
+                                            <div class="space-y-1 text-xs">
+                                                <div class="flex justify-between text-black"><span>DSA</span><span class="text-gray-400">150</span></div>
+                                                <div class="flex justify-between text-black"><span>Python</span><span class="text-gray-400">80</span></div>
+                                                <div class="flex justify-between text-black"><span>Java</span><span class="text-gray-400">50</span></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col items-center gap-3 h-full">
+                                <div class="bg-black text-white text-xs px-3 py-1 rounded-full font-bold border border-white/20">Step 2</div>
+                                <div class="${cardCommon} card-gradient-bg">
+                                    <div>
+                                        <h3 class="font-bold text-lg text-white mb-2">Start Realistic mock interview</h3>
+                                        <p class="text-sm text-gray-300 mb-8">Practice both communication and technical skills in realistic interview scenarios with Mokify AI.</p>
+                                    </div>
+                                    <div class="flex justify-center items-center relative h-64 w-full">
+                                        <div class="concentric-circle w-56 h-56" style="animation-delay: 0s;"></div>
+                                        <div class="concentric-circle w-44 h-44" style="animation-delay: 0.5s;"></div>
+                                        <div class="concentric-circle w-32 h-32" style="animation-delay: 1s;"></div>
+                                        <div class="concentric-circle w-20 h-20" style="animation-delay: 1.5s;"></div>
+                                        <div class="relative w-28 h-28 rounded-full bg-black border border-purple-500 flex items-center justify-center text-center text-xs font-bold text-white shadow-[0_0_30px_rgba(168,85,247,0.5)]">practice for<br>the interview</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col items-center gap-3 h-full">
+                                <div class="bg-black text-white text-xs px-3 py-1 rounded-full font-bold border border-white/20">Step 3</div>
+                                <div class="${cardCommon}">
+                                    <div>
+                                        <h3 class="font-bold text-lg text-white mb-2">Analysis report & Improvement plan</h3>
+                                        <p class="text-sm text-gray-400 mb-4">Use your dashboard to track and review performance. Improve your skills over time with guided insights.</p>
+                                    </div>
+                                    <div class="space-y-2 w-full">
+                                        <div class="bg-white/10 rounded-lg p-3 flex items-center gap-3 frame-row cursor-pointer">
+                                            <i data-lucide="message-square" class="w-4 h-4 text-blue-400 icon-pop"></i>
+                                            <div><div class="text-sm font-bold text-white">Communication</div><div class="text-[10px] text-gray-400">Clarity, tone, confidence</div></div>
+                                        </div>
+                                        <div class="bg-white/10 rounded-lg p-3 flex items-center gap-3 frame-row cursor-pointer">
+                                            <i data-lucide="brain-circuit" class="w-4 h-4 text-green-400 icon-pop"></i>
+                                            <div><div class="text-sm font-bold text-white">Problem solving</div><div class="text-[10px] text-gray-400">Approach & structure</div></div>
+                                        </div>
+                                        <div class="bg-white/10 rounded-lg p-3 flex items-center gap-3 frame-row cursor-pointer">
+                                            <i data-lucide="server" class="w-4 h-4 text-yellow-400 icon-pop"></i>
+                                            <div><div class="text-sm font-bold text-white">System design</div><div class="text-[10px] text-gray-400">Scalability & trade-offs</div></div>
+                                        </div>
+                                        <div class="bg-white/10 rounded-lg p-3 flex items-center gap-3 frame-row cursor-pointer">
+                                            <i data-lucide="code" class="w-4 h-4 text-pink-400 icon-pop"></i>
+                                            <div><div class="text-sm font-bold text-white">Coding</div><div class="text-[10px] text-gray-400">Code quality & implementation</div></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="mb-16 theme-bg-body">
+                    <div class="max-w-6xl mx-auto px-4">
+                         <div class="text-center mb-16">
+                             <h2 class="text-3xl md:text-4xl font-bold text-white">
+                                <span class="text-purple-500">Mokify AI</span> is all you need to master coding interviews
+                            </h2>
+                         </div>
+
+                         <div class="grid md:grid-cols-[1.7fr_1.3fr] gap-8 items-stretch">
+                            <div class="flex flex-col gap-6">
+                                <div class="relative bg-gradient-to-br from-purple-700/70 via-purple-800/80 to-purple-900/80 rounded-3xl border border-purple-400/40 p-8 overflow-hidden">
+                                    <div class="max-w-md relative z-10">
+                                        <h3 class="text-xl font-bold text-white mb-2">AI-powered Mock Interviews</h3>
+                                        <p class="text-sm md:text-[15px] text-purple-100 leading-relaxed">
+                                            Mokify AI interviewer simulates real interview scenarios, helping you master both communication and technical skills.
+                                        </p>
+                                    </div>
+                                    <div class="absolute right-8 bottom-8 hidden sm:flex items-center justify-center">
+                                        <div class="relative w-40 h-40 flex items-center justify-center">
+                                            <div class="concentric-circle w-40 h-40" style="animation-delay: 0s;"></div>
+                                            <div class="concentric-circle w-32 h-32" style="animation-delay: 0.5s;"></div>
+                                            <div class="concentric-circle w-24 h-24" style="animation-delay: 1s;"></div>
+                                            <div class="concentric-circle w-16 h-16" style="animation-delay: 1.5s;"></div>
+                                            <div class="relative w-20 h-20 rounded-full bg-black/60 flex items-center justify-center text-xs font-semibold mokify-circle" style="color: white;">Mokify AI</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-auto rounded-3xl p-6 flex flex-col justify-between dynamic-frame">
+                                    <div class="flex items-start gap-4">
+                                        <div class="w-12 h-12 rounded-full bg-yellow-500/20 border border-yellow-400/60 flex items-center justify-center shrink-0">
+                                            <i data-lucide="zap" class="w-6 h-6 text-yellow-300"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="font-bold text-lg theme-text-main mb-1 rt-text">Real-time feedback</h4>
+                                            <p class="text-sm theme-text-muted">Real time conversation to get immediate feedback on your coding interview performance.</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-8 space-y-4">
+                                        <div class="flex items-center gap-3">
+                                             <div class="relative w-5 h-5">
+                                                <span class="absolute inset-0 border-2 border-blue-500/30 rounded-full"></span>
+                                                <span class="absolute inset-0 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></span>
+                                             </div>
+                                             <span class="text-xs font-bold theme-text-main ai-thinking-text">AI Thinking</span>
+                                        </div>
+
+                                        <div class="space-y-3 pl-1 border-l-2 border-gray-700/30 ml-2">
+                                            <div class="flex items-center gap-3 pl-4">
+                                                <i data-lucide="user" class="w-4 h-4 theme-text-muted"></i>
+                                                <span class="text-xs theme-text-muted">User asks question</span>
+                                            </div>
+                                            <div class="flex items-center gap-3 pl-4">
+                                                <i data-lucide="ear" class="w-4 h-4 theme-text-muted"></i>
+                                                <span class="text-xs theme-text-muted">AI listens & responds</span>
+                                            </div>
+                                            <div class="h-2"></div> <div class="flex items-center gap-3 pl-4">
+                                                <i data-lucide="message-circle" class="w-4 h-4 text-purple-400"></i>
+                                                <span class="text-xs font-bold text-purple-400">AI speaking</span>
+                                            </div>
+                                            <div class="flex items-center gap-3 pl-4">
+                                                <i data-lucide="mic" class="w-4 h-4 theme-text-muted"></i>
+                                                <span class="text-xs theme-text-muted">User listens & responds</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex flex-col justify-between h-full">
+                                <div class="rounded-3xl overflow-hidden h-full min-h-[500px] flex items-center justify-center dynamic-frame w-full relative">
+                                    <img src="customimg.jpg" class="w-full h-full object-cover" alt="Mokify AI interview preview">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="theme-bg-body w-full">
+                    <div class="max-w-7xl mx-auto px-4">
+                        <div class="flex flex-row relative">
+                            <div class="w-1/2 flex flex-col">
+                                <div id="scroll-text-1" class="h-screen flex items-center p-12 scrolly-text">
+                                    <div>
+                                        <h3 class="text-4xl font-bold mb-4 theme-text-main">Practice by Company</h3>
+                                        <p class="text-lg theme-text-muted leading-relaxed">
+                                            Target your dream job by practicing rounds specific to top tech companies. 
+                                            We've curated the exact interview flows for Google, Amazon, Microsoft and more.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div id="scroll-text-2" class="h-screen flex items-center p-12 scrolly-text">
+                                    <div>
+                                        <h3 class="text-4xl font-bold mb-4 theme-text-main">Top 150 Questions</h3>
+                                        <p class="text-lg theme-text-muted leading-relaxed">
+                                            Master the most asked Data Structures and Algorithms questions. 
+                                            Our curated list covers everything from Arrays to Dynamic Programming to ensure you are ready.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div id="scroll-text-3" class="h-screen flex items-center p-12 scrolly-text">
+                                    <div>
+                                        <h3 class="text-4xl font-bold mb-4 theme-text-main">Rank Dashboard</h3>
+                                        <p class="text-lg theme-text-muted leading-relaxed mb-4">
+                                            Track your progress and compete with peers on our global leaderboard. Our rank dashboard gives you real-time insights into your performance, strengths, and areas for improvement compared to other candidates preparing for similar roles.
+                                        </p>
+                                        <p class="text-lg theme-text-muted leading-relaxed">
+                                            Visualize your growth trajectory with detailed analytics, percentile rankings, and skill breakdowns. Set goals, earn badges for achievements, and stay motivated with our gamified learning experience that makes interview preparation engaging and effective.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div id="scroll-text-4" class="h-screen flex items-center p-12 scrolly-text">
+                                    <div>
+                                        <h3 class="text-4xl font-bold mb-4 theme-text-main">Interview Rounds</h3>
+                                        <p class="text-lg theme-text-muted leading-relaxed mb-4">
+                                            Experience complete interview simulation with all types of rounds that top tech companies conduct. From technical coding challenges to behavioral interviews and system design discussions, we've got you covered for every stage of the interview process.
+                                        </p>
+                                        <p class="text-lg theme-text-muted leading-relaxed">
+                                            Our platform simulates authentic interview environments with AI interviewers trained on company-specific hiring patterns. Practice each round individually or take complete mock interviews that mimic real hiring processes from start to finish.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="w-1/2 h-screen sticky top-0 flex items-center justify-center p-8">
+                                <div class="w-full h-[500px] rounded-3xl overflow-hidden dynamic-frame border theme-border relative">
+                                    <img id="sticky-image-right" src="https://images.unsplash.com/photo-1573164713988-8665fc963095?w=800&auto=format&fit=crop&q=80" class="w-full h-full object-cover transition-image absolute inset-0 opacity-100" alt="Practice">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="mb-20 theme-bg-body">
+                    <div class="max-w-6xl mx-auto px-4 text-center">
+                        <h3 class="text-2xl font-semibold mb-8 theme-text-main">Meet our team</h3>
+                        <div class="relative w-full max-w-4xl mx-auto aspect-video rounded-2xl overflow-hidden border theme-border bg-white/5 group">
+                            <div class="w-full h-full relative ${animClass} team-slide">
+                                <img src="${member.img}" class="w-full h-full object-cover" alt="${member.name}">
+                                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-8">
+                                    <h2 class="text-3xl font-bold text-white mb-1">${member.name}</h2>
+                                    <p class="text-purple-400 font-medium">${member.role}</p>
+                                </div>
+                            </div>
+                            
+                            <button onclick="actions.prevTeam()" class="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-purple-600/80 text-white p-3 rounded-full backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100">
+                                <i data-lucide="chevron-left" class="w-6 h-6"></i>
+                            </button>
+                            <button onclick="actions.nextTeam()" class="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-purple-600/80 text-white p-3 rounded-full backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100">
+                                <i data-lucide="chevron-right" class="w-6 h-6"></i>
+                            </button>
+                        </div>
+                        <div class="mt-4 flex justify-center gap-2">
+                            ${TEAM_DATA.map((_, i) => `<div class="w-2 h-2 rounded-full ${i === store.teamSlide ? 'bg-purple-500' : 'bg-gray-600'}"></div>`).join('')}
+                        </div>
+                    </div>
+                </section>
+
+                <footer class="border-t border-white/10 py-12 mt-4 bg-black"><div class="max-w-6xl mx-auto px-4 flex flex-col items-center gap-8"><div class="text-center"><h4 class="text-white font-bold text-lg mb-4">Contact Us</h4><div class="flex gap-6 justify-center text-white"><i data-lucide="mail"></i></div></div><div class="text-center"><h4 class="text-gray-500 font-bold text-sm uppercase tracking-widest mb-4">Founders</h4><div class="flex flex-col gap-2 text-sm text-gray-400"><span>Swayam</span><span>Omkar</span><span>Sarthak</span><span>Aakash</span></div></div><div class="text-xs text-gray-600 mt-8">Mokify AI © ${new Date().getFullYear()}</div></div></footer>
+
+                ${store.showDemoVideo ? `<div class="fixed inset-0 z-40 flex items-center justify-center bg-black/70" onclick="actions.closeDemoModal()"><div class="relative w-[90%] max-w-3xl bg-black rounded-2xl border border-white/10 overflow-hidden" onclick="event.stopPropagation()"><button class="absolute top-4 right-4 z-50 p-2 bg-black/50 hover:bg-black/80 text-white rounded-full" onclick="actions.closeDemoModal()"><i data-lucide="x"></i></button><div class="relative group"><video id="demo-video-player" src="demo.mp4" class="w-full h-full" onended="actions.onDemoEnded()"></video><div id="demo-play-btn" class="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/40 cursor-pointer" onclick="actions.playDemoVideo()"><button class="flex items-center gap-2 bg-white/20 border border-white/20 text-white px-6 py-3 rounded-full font-bold text-lg"><i data-lucide="play" class="fill-white w-5 h-5"></i>Play Video</button></div></div></div></div>` : ''}
+            </div>`;
+        }
+
+        function renderAuth() {
+            const isLogin = store.authMode === 'login';
+            return `
+            <div class="min-h-screen w-full theme-bg-body flex items-center justify-center relative overflow-hidden p-4">
+                <button onclick="router.navigate('landing')" class="absolute top-8 left-8 theme-text-muted hover:theme-text-main flex items-center gap-2 transition-colors z-20">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Home
+                </button>
+                <div class="w-full max-w-md glass-panel p-8 rounded-2xl relative z-10">
+                    <div class="text-center mb-8">
+                        <h2 class="text-3xl font-bold mb-2 theme-text-main">${isLogin ? 'Welcome Back' : 'Join Mokify'}</h2>
+                        <p class="theme-text-muted text-sm">Enter your details to access the dashboard</p>
+                    </div>
+                    <div class="flex bg-black/20 p-1 rounded-lg mb-8 border theme-border">
+                        <button onclick="actions.toggleAuthMode('login')" class="flex-1 py-2 text-sm font-bold rounded-md transition-all ${isLogin ? 'bg-white/10 theme-text-main' : 'theme-text-muted'}">Login</button>
+                        <button onclick="actions.toggleAuthMode('signup')" class="flex-1 py-2 text-sm font-bold rounded-md transition-all ${!isLogin ? 'bg-white/10 theme-text-main' : 'theme-text-muted'}">Sign Up</button>
+                    </div>
+                    <div class="space-y-4">
+                        ${!isLogin ? `<input id="signup-name" type="text" placeholder="Full Name" class="w-full bg-transparent border theme-border rounded-xl p-3 theme-text-main focus:border-purple-500 outline-none">` : ''}
+                        <input id="${isLogin ? 'username' : 'signup-username'}" type="text" placeholder="Username" class="w-full bg-transparent border theme-border rounded-xl p-3 theme-text-main focus:border-purple-500 outline-none">
+                        <input id="${isLogin ? 'password' : 'signup-password'}" type="password" placeholder="Password" class="w-full bg-transparent border theme-border rounded-xl p-3 theme-text-main focus:border-purple-500 outline-none">
+                        <button onclick="actions.authAction()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl transition-all mt-2">
+                            ${isLogin ? 'Log In' : 'Create Account'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+            `;
+        }
+
+        function renderDashboard() {
+            // UNTOUCHED DASHBOARD
+            return `<div class="flex h-screen overflow-hidden"><div class="w-64 dashboard-col-frame flex flex-col p-4"><div class="mb-8 px-2 font-bold text-xl theme-text-main">Mokify AI</div><nav class="flex-1 space-y-2"><button onclick="actions.startCompanyPractice()" class="w-full text-left px-4 py-3 rounded-xl bg-white/5 border theme-border hover:border-purple-500 transition-all"><div class="font-bold theme-text-main">Companies</div><div class="text-xs theme-text-muted">Simulate Rounds</div></button><button onclick="actions.startQuestionsPractice()" class="w-full text-left px-4 py-3 rounded-xl bg-white/5 border theme-border hover:border-purple-500 transition-all"><div class="font-bold theme-text-main">150 Questions</div><div class="text-xs theme-text-muted">DSA Mastery</div></button></nav></div><div class="flex-1 theme-bg-body relative overflow-hidden flex flex-col"><div class="h-16 flex items-center justify-between px-8 dashboard-header-frame"><h2 class="text-xl font-bold">Dashboard</h2></div><div class="p-8 overflow-y-auto"><h3 class="font-bold text-lg mb-4 theme-text-main">Quick Actions</h3><div class="grid grid-cols-2 gap-6"><div class="p-8 rounded-2xl border theme-border bg-gradient-to-br from-blue-900/20 to-black hover:border-blue-500 transition cursor-pointer dynamic-frame" onclick="actions.startCompanyPractice()"><h3 class="text-xl font-bold mb-2 theme-text-main">Practice by Company</h3><p class="theme-text-muted">Target specific rounds.</p></div><div class="p-8 rounded-2xl border theme-border bg-gradient-to-br from-purple-900/20 to-black hover:border-purple-500 transition cursor-pointer dynamic-frame" onclick="actions.startQuestionsPractice()"><h3 class="text-xl font-bold mb-2 theme-text-main">Top 150 Questions</h3><p class="theme-text-muted">Ultimate grind list.</p></div></div></div></div></div>`;
+        }
+
+        function renderSetup() { return renderAuth().replace('Mokify AI', 'Setup').replace('Login', 'Back').replace('Sign Up', 'Next'); }
+        function renderQuestionsList() { return `<div class="flex h-screen theme-bg-body"><div class="flex-1 p-8 overflow-y-auto"><button onclick="router.navigate('dashboard')" class="mb-8 theme-text-muted hover:theme-text-main flex gap-2"><i data-lucide="arrow-left"></i> Dashboard</button><h2 class="text-3xl font-bold mb-6 theme-text-main">Top 150 Questions</h2><div class="space-y-3">${QUESTIONS_150.map(q => `<div onclick="actions.selectQuestion(${q.id})" class="p-4 border theme-border rounded-xl hover:border-purple-500 cursor-pointer flex justify-between bg-white/5 dynamic-frame"><span class="font-bold theme-text-main">#${q.id} ${q.title}</span><span class="text-xs theme-text-muted">${q.diff}</span></div>`).join('')}</div></div></div>`; }
+        function renderQuestionSetup() { return `<div class="min-h-screen theme-bg-body flex items-center justify-center p-4"><div class="w-full max-w-md border theme-border p-8 rounded-2xl glass-panel"><h2 class="text-2xl font-bold mb-4 theme-text-main">Start Problem</h2><input id="q-username" class="w-full bg-transparent border theme-border p-3 rounded-lg theme-text-main mb-4" placeholder="Your Name"><button onclick="actions.startQuestionSession()" class="w-full bg-purple-600 p-3 rounded-lg font-bold text-white">Start</button></div></div>`; }
+        function renderInterview() { return `<div class="h-screen flex flex-col theme-bg-body"><div class="h-16 border-b theme-border flex items-center justify-between px-8"><span class="font-bold theme-text-main">Interview Session</span><button onclick="actions.endInterview()" class="bg-red-600 px-4 py-1 rounded text-sm text-white">End</button></div><div class="flex-1 flex"><div class="w-1/2 border-r theme-border p-4" id="transcript-box"></div><div class="w-1/2 p-4 flex items-center justify-center"><button onclick="actions.toggleAnswer()" class="bg-blue-600 p-4 rounded-full text-white">Mic</button></div></div></div>`; }
+        function renderResults() { return `<div class="min-h-screen theme-bg-body p-8"><div class="max-w-3xl mx-auto border theme-border p-8 rounded-2xl glass-panel"><h1 class="text-3xl font-bold mb-4 theme-text-main">Results</h1><p class="theme-text-main">${store.interviewData.latestAnalysis?.feedback || "Processing..."}</p><button onclick="router.navigate('dashboard')" class="mt-8 bg-white/10 px-6 py-2 rounded theme-text-main">Back to Dashboard</button></div></div>`; }
+
+        // --- MAIN RENDER ---
+        function renderApp() {
+            const app = document.getElementById('app');
+            const nav = document.getElementById('main-nav');
+            
+            if (['dashboard','interview','setup','questions','question_setup','results'].includes(store.view)) {
+                nav.classList.add('hidden-force');
+            } else {
+                nav.classList.remove('hidden-force');
+            }
+
+            switch(store.view) {
+                case 'landing': app.innerHTML = renderLanding(); initScrollObserver(); break;
+                case 'pricing': app.innerHTML = renderPricing(); break;
+                case 'login': app.innerHTML = renderAuth(); break;
+                case 'dashboard': app.innerHTML = renderDashboard(); break;
+                case 'setup': app.innerHTML = renderSetup(); break;
+                case 'questions': app.innerHTML = renderQuestionsList(); break;
+                case 'question_setup': app.innerHTML = renderQuestionSetup(); break;
+                case 'interview': app.innerHTML = renderInterview(); break;
+                case 'results': app.innerHTML = renderResults(); break;
+                default: app.innerHTML = renderLanding(); initScrollObserver();
+            }
+            if(window.lucide) lucide.createIcons();
+            renderNav();
+        }
+
+        // --- SCROLL ANIMATION OBSERVER ---
+        function initScrollObserver() {
+            setTimeout(() => {
+                const img = document.getElementById('sticky-image-right');
+                const text1 = document.getElementById('scroll-text-1');
+                const text2 = document.getElementById('scroll-text-2');
+                const text3 = document.getElementById('scroll-text-3');
+                const text4 = document.getElementById('scroll-text-4');
+                
+                if(!img || !text1 || !text2) return;
+
+                // Images
+                const img1 = "https://images.unsplash.com/photo-1573164713988-8665fc963095?w=800&auto=format&fit=crop&q=80"; // Company Practice
+                const img2 = "questiont.jpg"; // User specified for 150
+                const img3 = "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop&q=80"; // Rank Dashboard (Analytics)
+                const img4 = "https://images.unsplash.com/photo-1543269865-cbf427effbad?w=800&auto=format&fit=crop&q=80"; // Interview Rounds (Meeting)
+
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            // Highlight text opacity
+                            document.querySelectorAll('.scrolly-text').forEach(el => el.classList.remove('active'));
+                            entry.target.classList.add('active');
+
+                            // Swap Image
+                            let newSrc = img1;
+                            if (entry.target.id === 'scroll-text-1') newSrc = img1;
+                            else if (entry.target.id === 'scroll-text-2') newSrc = img2;
+                            else if (entry.target.id === 'scroll-text-3') newSrc = img3;
+                            else if (entry.target.id === 'scroll-text-4') newSrc = img4;
+
+                            // Smooth fade swap
+                            if (img.src !== newSrc) {
+                                img.style.opacity = 0;
+                                setTimeout(() => { img.src = newSrc; img.style.opacity = 1; }, 200);
+                            }
+                        }
+                    });
+                }, { threshold: 0.5 }); // Trigger when 50% visible
+
+                observer.observe(text1);
+                observer.observe(text2);
+                observer.observe(text3);
+                observer.observe(text4);
+            }, 500); // Wait for DOM render
+        }
+
+        window.onload = function() { renderApp(); };
+    </script>
+</body>
+</html>
